@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#17152d"><title>Mohamed GPT</title>
+<link rel="icon" href="logo-mohamed-gpt.jpg">
+<style>
+:root{color-scheme:dark;--bg:#10101b;--panel:#19192a;--panel2:#22223a;--accent:#8b7cff;--text:#f4f3ff;--muted:#b7b5d0}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top,#29234b 0,#10101b 48%);color:var(--text);font:16px/1.5 system-ui,sans-serif;min-height:100vh}
+.app{max-width:900px;margin:auto;min-height:100vh;display:flex;flex-direction:column;padding:14px}
+header{display:flex;align-items:center;gap:12px;padding:10px 4px 16px;border-bottom:1px solid #ffffff1a}
+.logo{width:52px;height:52px;border-radius:14px;object-fit:cover;background:white}
+h1{font-size:20px;margin:0}header p{margin:2px 0 0;color:var(--muted);font-size:13px}
+#status{margin-left:auto;font-size:11px;color:#d5d0ff;background:#ffffff12;padding:7px 9px;border-radius:99px}
+#chat{flex:1;padding:18px 0;display:flex;flex-direction:column;gap:14px}
+.welcome{padding:20px;border:1px solid #ffffff17;border-radius:22px;background:#ffffff08}
+.welcome h2{margin:0 0 8px;font-size:22px}.welcome p{margin:0;color:var(--muted)}
+.suggestions{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}.suggestions button{background:#ffffff0c;border:1px solid #ffffff20;color:var(--text);border-radius:99px;padding:9px 12px}
+.msg{max-width:88%;padding:13px 15px;border-radius:18px;white-space:pre-wrap;overflow-wrap:anywhere}
+.user{align-self:flex-end;background:#6554cf;border-bottom-right-radius:5px}
+.assistant{align-self:flex-start;background:var(--panel2);border:1px solid #ffffff10;border-bottom-left-radius:5px}
+.label{font-size:11px;opacity:.75;margin-bottom:5px;font-weight:700;letter-spacing:.04em}
+.composer{position:sticky;bottom:0;padding:12px 0 5px;background:linear-gradient(transparent,var(--bg) 20%)}
+form{display:flex;gap:9px;background:var(--panel);border:1px solid #ffffff20;padding:8px;border-radius:20px}
+textarea{flex:1;resize:none;min-height:46px;max-height:140px;border:0;outline:0;background:transparent;color:var(--text);padding:11px;font:inherit}
+#send{border:0;border-radius:15px;background:var(--accent);color:#100e25;font-weight:800;padding:0 16px;min-width:78px}
+#send:disabled{opacity:.5}.foot{font-size:11px;color:var(--muted);text-align:center;padding:8px 5px}.error{color:#ffb9c2}.typing{opacity:.7;font-style:italic}
+@media(max-width:520px){.app{padding:10px}.msg{max-width:95%}.welcome{padding:17px}}
+</style></head>
+<body><div class="app">
+<header><img class="logo" src="logo-mohamed-gpt.jpg" alt="Logo Mohamed GPT"><div><h1>Mohamed GPT</h1><p>Ton assistant IA • Français</p></div><div id="status">À configurer</div></header>
+<main id="chat" aria-live="polite"><section class="welcome" id="welcome"><h2>Bienvenue sur Mohamed GPT 👋</h2><p>Pose une question, demande une explication ou apprends quelque chose étape par étape. Pour activer les réponses IA, le serveur doit être configuré.</p><div class="suggestions"><button type="button">Explique-moi les bases de la cybersécurité</button><button type="button">Aide-moi à comprendre les matrices</button><button type="button">Comment fonctionne un programme informatique ?</button></div></section></main>
+<div class="composer"><form id="form"><textarea id="prompt" rows="1" placeholder="Écris ta question…" aria-label="Ta question" required></textarea><button id="send" type="submit">Envoyer</button></form><div class="foot">Ne partage pas de mots de passe ni de données personnelles sensibles. Vérifie les informations importantes.</div></div></div>
+<script>
+const API_URL="https://REMPLACE-MOI.workers.dev/chat"; // À remplacer après le déploiement du serveur.
+const chat=document.getElementById("chat"),form=document.getElementById("form"),promptBox=document.getElementById("prompt"),send=document.getElementById("send"),status=document.getElementById("status");
+let history=[],welcome=document.getElementById("welcome");
+document.querySelectorAll(".suggestions button").forEach(b=>b.addEventListener("click",()=>{promptBox.value=b.textContent;promptBox.focus()}));
+promptBox.addEventListener("input",()=>{promptBox.style.height="auto";promptBox.style.height=Math.min(promptBox.scrollHeight,140)+"px"});
+function addMessage(role,text,extra=""){if(welcome){welcome.remove();welcome=null}const box=document.createElement("div");box.className="msg "+(role==="user"?"user":"assistant")+" "+extra;const label=document.createElement("div");label.className="label";label.textContent=role==="user"?"TOI":"MOHAMED GPT";const body=document.createElement("div");body.textContent=text;box.append(label,body);chat.appendChild(box);box.scrollIntoView({behavior:"smooth",block:"end"});return{box,body}}
+form.addEventListener("submit",async e=>{e.preventDefault();const text=promptBox.value.trim();if(!text||send.disabled)return;addMessage("user",text);history.push({role:"user",content:text});promptBox.value="";promptBox.style.height="auto";send.disabled=true;send.textContent="…";const pending=addMessage("assistant","Je réfléchis…","typing");
+try{if(API_URL.includes("REMPLACE-MOI"))throw new Error("L'IA n'est pas connectée. Déploie le serveur et remplace API_URL dans index.html.");const response=await fetch(API_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages:history.slice(-16)})});let data={};try{data=await response.json()}catch(_){}if(!response.ok)throw new Error(data.error||"Erreur du serveur ("+response.status+").");if(!data.reply)throw new Error("Réponse vide. Vérifie la clé API et le quota.");pending.box.classList.remove("typing");pending.body.textContent=data.reply;history.push({role:"assistant",content:data.reply});status.textContent="Connecté"}catch(err){pending.box.classList.add("error");pending.body.textContent="Je n'ai pas pu répondre : "+err.message}finally{send.disabled=false;send.textContent="Envoyer";promptBox.focus()}});
+status.textContent=API_URL.includes("REMPLACE-MOI")?"Serveur à configurer":"Serveur configuré";
+</script></body></html>
